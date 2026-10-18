@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>MR. IC AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#eef4ff;
+font:15px system-ui,sans-serif}
+header{padding:18px;display:flex;align-items:center;
+gap:12px;border-bottom:1px solid #29384d}
+.logo{background:#38bdf8;color:#101827;padding:10px;
+border-radius:12px;font-weight:900}
+header small{display:block;color:#a5b4c8}
+main{max-width:850px;margin:auto;padding:20px}
+h1{font-size:26px}
+.muted{color:#a5b4c8}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tool{background:#1b293c;border:1px solid #34445c;
+border-radius:15px;padding:16px;color:white;
+text-align:left;font:inherit;cursor:pointer}
+.tool span{display:block;font-size:25px;margin-bottom:8px}
+.panel{margin-top:20px;background:#1b293c;
+border:1px solid #34445c;border-radius:16px;padding:16px}
+#messages{min-height:100px;max-height:42vh;
+overflow:auto;display:flex;flex-direction:column;gap:10px}
+.msg{padding:12px;border-radius:12px;
+white-space:pre-wrap;overflow-wrap:anywhere}
+.user{background:#155e75;align-self:flex-end}
+.bot{background:#29384d;align-self:flex-start}
+input,textarea{width:100%;padding:13px;margin:7px 0;
+border-radius:10px;border:1px solid #43546d;
+background:#101827;color:white;font:inherit}
+button.send{background:#38bdf8;color:#101827;
+border:0;border-radius:10px;padding:12px 16px;
+font-weight:700;cursor:pointer}
+#status{color:#a5b4c8;font-size:13px}
+footer{text-align:center;padding:20px;color:#8fa2bb;
+font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">IC</div>
+  <div><strong>MR. IC AI</strong>
+  <small>Your personal AI platform</small></div>
+</header>
+<main>
+  <h1 id="heading">Welcome to MR. IC AI</h1>
+  <p class="muted">Choose a tool to get started.</p>
+  <div class="tools">
+    <button class="tool" onclick="selectTool('chat')">
+      <span>💬</span><strong>AI Chat</strong>
+      <small>Ask questions</small>
+    </button>
+    <button class="tool" onclick="selectTool('image')">
+      <span>🎨</span><strong>Image Studio</strong>
+      <small>Create images</small>
+    </button>
+    <button class="tool" onclick="selectTool('code')">
+      <span>💻</span><strong>Code Assistant</strong>
+      <small>Learn and debug</small>
+    </button>
+    <button class="tool" onclick="selectTool('study')">
+      <span>📚</span><strong>Study Zone</strong>
+      <small>Notes and quizzes</small>
+    </button>
+  </div>
+
+  <section class="panel">
+    <h2 id="toolTitle">AI Chat</h2>
+    <div id="messages" aria-live="polite">
+      <div class="msg bot">Welcome! Select a tool and type your request.</div>
+    </div>
+    <form id="form">
+      <textarea id="prompt" rows="2" maxlength="4000"
+      placeholder="Ask MR. IC AI anything..." required></textarea>
+      <button class="send" id="send">Send request</button>
+    </form>
+    <p id="status">Demo interface — AI backend not connected yet.</p>
+  </section>
+  <p class="muted">Login, saved chats and image uploads will be added in the next stages.</p>
+</main>
+<footer>MR. IC AI · Your ideas, powered by AI</footer>
+<script>
+let currentTool = "chat";
+const API_URL = "PASTE_WORKER_URL_HERE";
+const messages = document.querySelector("#messages");
+const promptBox = document.querySelector("#prompt");
+const statusBox = document.querySelector("#status");
+
+function selectTool(tool) {
+  currentTool = tool;
+  const names = {
+    chat:"AI Chat", image:"Image Studio",
+    code:"Code Assistant", study:"Study Zone"
+  };
+  document.querySelector("#heading").textContent = names[tool];
+  document.querySelector("#toolTitle").textContent = names[tool];
+  promptBox.placeholder = tool === "image"
+    ? "Describe the image you want..."
+    : tool === "code"
+    ? "Paste code or describe your programming problem..."
+    : tool === "study"
+    ? "Enter a topic to learn or practise..."
+    : "Ask MR. IC AI anything...";
+  statusBox.textContent = "Selected: " + names[tool];
+}
+
+document.querySelector("#form").addEventListener("submit",
+async event => {
+  event.preventDefault();
+  const text = promptBox.value.trim();
+  if (!text) return;
+  if (API_URL === "PASTE_WORKER_URL_HERE") {
+    statusBox.textContent =
+      "Backend not connected yet. Complete the next setup stage.";
+    return;
+  }
+
+  const add = (value, role) => {
+    const div = document.createElement("div");
+    div.className = "msg " + role;
+    div.textContent = value;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  };
+
+  add(text, "user");
+  promptBox.value = "";
+  document.querySelector("#send").disabled = true;
+  statusBox.textContent = "Working...";
+
+  try {
+    const response = await fetch(API_URL, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({tool:currentTool,message:text})
+    });
+    const data = await response.json();
+    if (!response.ok) throw Error("Request failed");
+    add(data.reply || "No text reply received.", "bot");
+    statusBox.textContent = "Done";
+  } catch {
+    statusBox.textContent =
+      "Could not connect. Check your backend settings.";
+  } finally {
+    document.querySelector("#send").disabled = false;
+  }
+});
+</script>
+</body>
+</html>
